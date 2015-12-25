@@ -16,6 +16,7 @@ public class DefaultAnnoPlugin {
 
     @NovaMethodListener(name = "index")
     public IWebServiceResponse getIndexPage(IWebServiceRequest request) {
+        System.err.println("YA IM HERE");
         String make = "";
         make += "HTTP/1.1 404 Not Found\r\n";
         make += "Date: " + new Date().toString() + "\r\n";

@@ -90,7 +90,6 @@ public class AnnotationPageHandler {
     @EventHandler
     public void onServerRequestEvent(ServerRequestEvent event) {
         String path = event.getHttpHeaderParser().getRequestURL().substring(1);
-        System.out.println("T: " + path);
         if (pluginAndPathRegistry.containsKey(path.substring(0, path.indexOf('/')))) {
             HashMap<String, NovaMethodListenerData> dataHashMap = pluginAndPathRegistry.get(path.substring(0, path.indexOf('/')));
             String path2 = path.substring(path.lastIndexOf('/') + 1);
