@@ -31,11 +31,16 @@ import net.foxdenstudio.novacula.core.plugins.NovaPlugin;
 import net.foxdenstudio.novacula.core.plugins.detector.ADetect;
 import net.foxdenstudio.novacula.core.plugins.events.LoadEvent;
 import net.foxdenstudio.novacula.core.plugins.events.ServerRequestEvent;
+import net.foxdenstudio.novacula.outreach.IBasicData;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -49,6 +54,14 @@ public class AnnotationPageHandler {
 
     @EventHandler
     public void onLoad(LoadEvent event) {
+
+        try {
+            IBasicData iBasicData = (IBasicData) Naming.lookup("//localhost/NovaOutreachServer/IBasicData");
+            System.err.println(iBasicData.getName());
+        } catch (NotBoundException | MalformedURLException | RemoteException e) {
+            e.printStackTrace();
+        }
+
 
         final ADetect.TypeReporter reporter = new ADetect.TypeReporter() {
             @Override
@@ -89,6 +102,13 @@ public class AnnotationPageHandler {
 
     @EventHandler
     public void onServerRequestEvent(ServerRequestEvent event) {
+        IBasicData iBasicData = null;
+        try {
+            iBasicData = (IBasicData) Naming.lookup("//localhost/NovaOutreachServer/IBasicData");
+        } catch (NotBoundException | MalformedURLException | RemoteException e) {
+            e.printStackTrace();
+        }
+
         String path = event.getHttpHeaderParser().getRequestURL().substring(1);
         if (pluginAndPathRegistry.containsKey(path.substring(0, path.indexOf('/')))) {
             HashMap<String, NovaMethodListenerData> dataHashMap = pluginAndPathRegistry.get(path.substring(0, path.indexOf('/')));
@@ -110,6 +130,9 @@ public class AnnotationPageHandler {
                         make += "Accept-Ranges: bytes\r\n";
                         make += "Content-Type: " + serviceResponse.mimeType() + "\r\n";
                         make += "\r\n";
+                        if (iBasicData != null) {
+                            iBasicData.passData("anno", make);
+                        }
                         event.getClientOutputStream().write(make.getBytes());
                         event.getClientOutputStream().flush();
 
