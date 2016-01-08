@@ -1,1 +1,1 @@
-# ProjectNovacula-Anno [![Build Status](https://travis-ci.org/FoxDenStudio/Project-Novacula-Anno.svg?branch=v0.5)](https://travis-ci.org/FoxDenStudio/Project-Novacula-Anno)
+# ProjectNovacula-Anno [![Build Status](https://travis-ci.org/FoxDenStudio/ProjectNovacula-Anno.svg?branch=v0.5)](https://travis-ci.org/FoxDenStudio/ProjectNovacula-Anno)
