@@ -24,8 +24,12 @@
 
 package net.foxdenstudio.novacula.anno;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
 import net.foxdenstudio.novacula.anno.requests.IWebServiceRequest;
 import net.foxdenstudio.novacula.anno.responses.IWebServiceResponse;
+import net.foxdenstudio.novacula.core.StartupArgs;
 import net.foxdenstudio.novacula.core.plugins.EventHandler;
 import net.foxdenstudio.novacula.core.plugins.NovaPlugin;
 import net.foxdenstudio.novacula.core.plugins.detector.ADetect;
@@ -33,7 +37,7 @@ import net.foxdenstudio.novacula.core.plugins.events.LoadEvent;
 import net.foxdenstudio.novacula.core.plugins.events.ServerRequestEvent;
 import net.foxdenstudio.novacula.outreach.IBasicData;
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -41,6 +45,7 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -110,6 +115,11 @@ public class AnnotationPageHandler {
         }
 
         String path = event.getHttpHeaderParser().getRequestURL().substring(1);
+        // TODO Fails without trailing slash
+        if (path.indexOf('/') == -1) {
+            error404(event);
+            return;
+        }
         if (pluginAndPathRegistry.containsKey(path.substring(0, path.indexOf('/')))) {
             HashMap<String, NovaMethodListenerData> dataHashMap = pluginAndPathRegistry.get(path.substring(0, path.indexOf('/')));
             String path2 = path.substring(path.lastIndexOf('/') + 1);
@@ -136,18 +146,58 @@ public class AnnotationPageHandler {
                         event.getClientOutputStream().write(make.getBytes());
                         event.getClientOutputStream().flush();
 
-                        for (int i = 0; i < serviceResponse.getByteData().length; i++) {
-                            event.getClientOutputStream().write(serviceResponse.getByteData()[i]);
-                            event.getClientOutputStream().flush();
-                        }
+                        HashMap<String, Object> scopes = new HashMap<>();
+                        scopes.put("name", "Mike");
+                        scopes.put("items", new ArrayList<String>() {{
+                            add("test");
+                            add("hello");
+                            add("something");
+                        }});
+
+                        Writer writer = new OutputStreamWriter(event.getClientOutputStream());
+                        MustacheFactory mf = new DefaultMustacheFactory();
+                        Mustache mustache = mf.compile(new InputStreamReader(new ByteArrayInputStream(serviceResponse.getByteData())), "example");
+                        mustache.execute(writer, scopes);
+                        writer.flush();
 
                         event.handle();
+
+                        return;
                     }
                 } catch (InvocationTargetException | IllegalAccessException | IOException e) {
                     e.printStackTrace();
                 }
             }
         }
+        error404(event);
     }
 
+    private void error404(ServerRequestEvent event) {
+        String make = "";
+        make += "HTTP/1.1 404 Not Found\r\n";
+        make += "Date: " + new Date().toString() + "\r\n";
+        make += "Server: NovaServer1.5r\n";
+        make += "Accept-Ranges: bytes\r\n";
+        make += ("Content-Type: text/html\r\n");
+        make += "\r\n";
+        make += "<html>\r\n";
+        make += "<Title>404 File Not Found</Title>\r\n";
+        make += "<body style='background-color: #2A3132;'>\r\n";
+        make += "<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>\r\n";
+        make += "<div align='center'><center>\r\n";
+        make += "<div style='width: 60%;padding: 7px;background-color: #763626;'>\r\n";
+        make += "<p align='center'><font color='#FFFFFF' size='6'><strong>404 File Not Found</strong></font></p>\r\n";
+        make += "<p><font color='#FFFFFF' size='4'>The Web Server cannot find the requested file or script.  Please check the URL to be sure that it is correct.</font></p>\r\n";
+        make += "<p><font color='#FFFFFF' size='4'>If the problem persists, please contact the webmaster at " + StartupArgs.MAILTO + "</font></p>\r\n";
+        make += "</div>\r\n";
+        make += "</center></div>\r\n";
+        make += "</html>" + "\r\n";
+        try {
+            event.getClientOutputStream().write(make.getBytes());
+            event.handle();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 }
